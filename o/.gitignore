@@ -1,0 +1,21 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+*.egg-info/
+
+# Raw captures and generated artifacts
+*.mp4
+*.avi
+*.mov
+*.png
+*.jpg
+*.jpeg
+data/raw/
+data/processed/
+
+# Local tooling
+.idea/
+.vscode/
+*.log
+
