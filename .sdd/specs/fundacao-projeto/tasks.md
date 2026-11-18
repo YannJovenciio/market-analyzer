@@ -158,7 +158,7 @@ anterior ao portão P1.
 Etapa isolada de propósito: re-normalização misturada a movimentação de
 arquivos produz um diff ilegível e atrapalha a detecção de renomeação de E3.
 
-- [ ] **3.1 Criar o `.gitattributes` na raiz**
+- [x] **3.1 Criar o `.gitattributes` na raiz**
   - Três blocos, nesta ordem: `* text=auto`; tipos de texto declarados
     (`*.py text diff=python`, `*.md`, `*.toml`, `*.csv`, `*.txt`, `.gitignore`,
     `.gitattributes`); binários (`*.png`, `*.jpg`, `*.jpeg`, `*.mp4`, `*.avi`,

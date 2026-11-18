@@ -830,3 +830,93 @@ acrescentado ali: a rede já estava armada, só não se sabia que ela era a
 #### Portão P1 fechado — commit
 
 Com o critério 4 corrigido, as cinco verificações passam. E2 está liberada.
+
+---
+
+## E2 — Normalização de fim de linha (Req. 3.8–3.10)
+
+### 3.1 — `.gitattributes` na raiz ✅
+
+**Data:** 18/11/2026
+**Requisitos:** 3.8, 3.10
+
+Arquivo criado com os três blocos de `design.md` D-4, na ordem especificada,
+sem desvio de conteúdo. 20 linhas, LF, UTF-8.
+
+#### Verificação que importa: o que o git **resolve**, não o que o arquivo diz
+
+Ler o arquivo não prova nada — o que vale é a resolução de atributos. Por
+`git check-attr -a`:
+
+| Caminho | Resolvido |
+|---|---|
+| `src/market_analyzer/cli.py` | `text: set`, `diff: python` |
+| `README.md`, `pyproject.toml` | `text: set` |
+| `src/market_analyzer/initial_data.csv` | `text: set` |
+| `.gitignore`, `.gitattributes` | `text: set` |
+| `data/fixtures/amostra.png` | `binary: set` · `text: unset` · `diff: unset` · `merge: unset` |
+| `data/raw/video.mp4` | idem |
+
+A macro `binary` expande mesmo para `-text -diff -merge`: é o mecanismo que
+o Req. 3.10 pede, e é o que protege as fixtures `.png` — um único byte
+trocado por conversão de fim de linha invalidaria o gabarito de OCR em
+silêncio.
+
+> Os dois últimos caminhos ainda não existem no disco; `git check-attr`
+> resolve sobre a cadeia do caminho, não sobre o arquivo. Nada foi criado
+> para fazer esta verificação.
+
+#### `eol` não aparece no arquivo
+
+```
+$ grep -c "eol" .gitattributes
+0
+```
+
+Confirmado o que a tarefa exige: `* text=auto` **sem** `eol=lf`. Forçar LF
+na árvore de trabalho contrariaria a letra do critério 3.8, que manda cada
+checkout usar o fim de linha nativo — e o ambiente de referência é Windows.
+
+#### Risco verificado: o `.lnk` não está coberto pela lista de binários
+
+O atalho `src/market_analyzer/20261116-1555-54.7150164.mp4.lnk` tem extensão
+**`.lnk`**, que **não** consta do bloco de binários de D-4. Ele cai no
+`* text=auto` global:
+
+```
+$ git check-attr -a <o .lnk>
+text: auto
+```
+
+Isso só seria perigoso se o git o tratasse como texto na re-normalização da
+tarefa 3.2. **Não trata:** o conteúdo começa em `4c 00 00 00 01 14 02 00`, com
+NUL já no segundo byte, e o git o classifica como binário por heurística —
+
+```
+$ git diff --no-index --stat /dev/null <o .lnk>
+ ... | Bin 0 -> 3029 bytes
+```
+
+Com `text=auto`, o git só normaliza o que **detecta** como texto. O atalho
+passa intacto pela tarefa 3.2.
+
+**Decidido não acrescentar `*.lnk binary` ao arquivo:** seria desvio de D-4
+para proteger um arquivo que a tarefa 5.2 apaga em E4, e a proteção já existe
+por detecção de conteúdo. Fica registrado para que a ausência não seja lida
+como descuido.
+
+#### Estado
+
+```
+$ git status --porcelain
+?? .gitattributes
+```
+
+Nenhum arquivo passou a aparecer como modificado só por existir o
+`.gitattributes` — criar o arquivo **não** re-normaliza o que já está no
+índice. É exatamente por isso que a tarefa 3.2 existe, e o `--dry-run` do
+`git add --renormalize` já confirma que ela alcançaria os 32 arquivos
+rastreados.
+
+Sem commit: o `.gitattributes` entra no mesmo commit da re-normalização, como
+`design.md` §9 E2 descreve (criar → renormalizar → commitar).
