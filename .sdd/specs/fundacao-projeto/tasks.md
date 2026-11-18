@@ -167,7 +167,7 @@ arquivos produz um diff ilegível e atrapalha a detecção de renomeação de E3
     critério 3.8, que manda cada checkout usar o fim de linha nativo.
   - _Requisitos: 3.8, 3.10_
 
-- [ ] **3.2 Re-normalizar o conteúdo já versionado**
+- [x] **3.2 Re-normalizar o conteúdo já versionado**
   - `git add --renormalize .` — passo **obrigatório**: criar o
     `.gitattributes` não re-normaliza o que já está no índice, e sem ele o
     critério 3.9 não fica garantido.
@@ -175,7 +175,7 @@ arquivos produz um diff ilegível e atrapalha a detecção de renomeação de E3
     diff será grande por desenho.
   - _Requisitos: 3.9_
 
-- [ ] **3.3 Portão de E2 — árvore estável e suíte intacta**
+- [x] **3.3 Portão de E2 — árvore estável e suíte intacta**
   - `git status --porcelain` logo após o commit → **saída vazia**.
   - `pytest` → ainda **10 testes, 0 falhas**.
   - _Requisitos: 3.9, 10.5, 10.6_

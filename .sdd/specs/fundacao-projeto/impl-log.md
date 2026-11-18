@@ -920,3 +920,155 @@ rastreados.
 
 Sem commit: o `.gitattributes` entra no mesmo commit da re-normalização, como
 `design.md` §9 E2 descreve (criar → renormalizar → commitar).
+
+---
+
+### 3.2 — Re-normalização do conteúdo versionado ✅
+
+**Data:** 18/11/2026
+**Requisitos:** 3.9
+**Commit:** `3458d4b` — `chore: add .gitattributes and renormalize line endings`
+
+#### O commit próprio, como a tarefa exige
+
+A tarefa manda commitar "em commit próprio, sem misturar com qualquer outra
+alteração". A árvore tinha o registro da tarefa 3.1 pendente, que **foi
+commitado antes**, em `d446d0d`. O commit de E2 ficou com um arquivo só.
+
+#### `git add --renormalize .` não mudou **nada**
+
+```
+$ git add .gitattributes && git add --renormalize .
+$ git diff --cached --stat
+ .gitattributes | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+```
+
+Nenhum arquivo rastreado teve conteúdo alterado. O "diff grande por desenho"
+que a tarefa antecipava **não se materializou**, e o motivo importa.
+
+#### Por que foi nulo — e por que isso **não** torna o V-24 inofensivo
+
+O índice já estava em LF. Mas não por decisão do repositório:
+
+```
+$ git config --show-origin core.autocrlf
+file:C:/Program Files/Git/etc/gitconfig    true
+```
+
+O `core.autocrlf=true` vem do **gitconfig de sistema** — é o padrão do Git
+for Windows, não configuração deste projeto. Ou seja: a normalização era
+propriedade da **instalação do git desta máquina**, não do repositório.
+
+É exatamente o que o critério 3.9 descreve: *"QUANDO o repositório for clonado
+em uma máquina com configuração de `core.autocrlf` diferente da atual..."*.
+Até aqui, não havia garantia nenhuma — um colaborador com `autocrlf=false` ou
+`input` produziria outro resultado, e bastaria um commit com bytes CRLF para
+envenenar o índice.
+
+O `.gitattributes` transforma isso em propriedade do repositório. O passo
+obrigatório continuou sendo obrigatório: **não dava para saber que era nulo
+sem executá-lo**, e o resultado nulo é em si a prova de que o índice estava
+íntegro.
+
+#### Efeito colateral esperado, registrado para não assustar depois
+
+Os `.md` estão em **LF no disco** agora, enquanto o índice está em LF e o
+`autocrlf=true` manda entregar **CRLF** no checkout. Um clone novo vai
+materializá-los em CRLF, com bytes diferentes dos que estão no disco neste
+momento. Isso é o comportamento correto do critério 3.8 — "cada checkout usa
+o fim de linha nativo" — e o `git status` continua limpo porque o git compara
+após normalizar. A verificação por clone é o critério 3.9 e está na tarefa
+3.3, com a repetição final na 9.5.
+
+#### Estado logo após o commit
+
+```
+$ git status --porcelain
+(saída vazia)
+```
+
+Primeira das duas verificações do portão de E2, feita no momento certo —
+imediatamente após o commit, antes de qualquer outra escrita.
+
+---
+
+### 3.3 — Portão de E2 ✅ **verde**
+
+**Data:** 18/11/2026
+**Requisitos:** 3.9, 10.5, 10.6
+
+#### ✅ 1. `git status --porcelain` logo após o commit → vazio
+
+Verificado no momento exato, em `3458d4b`, e registrado na tarefa 3.2. As
+únicas pendências da árvore agora são `impl-log.md` e `tasks.md` — o registro
+desta própria etapa, não resíduo de re-normalização:
+
+```
+ M .sdd/specs/fundacao-projeto/impl-log.md | 70 +
+ M .sdd/specs/fundacao-projeto/tasks.md    |  2 +-
+```
+
+#### ✅ 2. `pytest` → 10 verdes
+
+```
+collected 10 items
+tests\test_market_analyzer.py ....   [ 40%]
+tests\test_price_ocr.py ....         [ 80%]
+tests\test_video_sampler.py ..       [100%]
+10 passed in 0.10s
+```
+
+Inalterada em relação ao portão P1. A normalização não tocou em
+comportamento, como se esperava de uma etapa que não mudou byte nenhum de
+conteúdo.
+
+#### ✅ 3. Critério 3.9 provado por clone — o teste que o requisito descreve
+
+As duas verificações acima **não exercitam o critério 3.9**: `git status`
+limpo nesta árvore nada diz sobre outra máquina. O critério fala de clone
+"em uma máquina com configuração de `core.autocrlf` diferente da atual".
+Três clones descartáveis, um por configuração:
+
+| `core.autocrlf` | `README.md` no disco | `git status` |
+|---|---|---|
+| `false` | **CRLF** (35) | vazio ✅ |
+| `input` | **LF** (35) | vazio ✅ |
+| `true` | **CRLF** (35) | vazio ✅ |
+
+**Nenhum arquivo aparece modificado sem mudança de conteúdo, nas três.**
+Critério 3.9 satisfeito.
+
+Detalhe que confirma o critério 3.8: com `autocrlf=false` o checkout saiu em
+**CRLF**, não em LF. Com o atributo `text` ativo, o fim de linha do checkout
+passa a ser governado por `core.eol`, que vale `native` por padrão — e nativo
+no Windows é CRLF. É literalmente "cada checkout usa o fim de linha nativo da
+máquina". O `input` é a exceção coerente: ele manda não converter na saída.
+
+#### ✅ 4. O lado que realmente importava do V-24 — normalização **no commit**
+
+O risco do V-24 nunca foi o checkout; era o **commit**. Com
+`core.autocrlf=false`, bytes CRLF entravam no índice e envenenavam o
+repositório. Testado dentro do clone `autocrlf=false`:
+
+```
+$ printf 'linha um\r\nlinha dois\r\n' > novo.md     # CRLF=2 no disco
+$ git add novo.md && git commit -m teste
+$ git cat-file -p HEAD:novo.md | od -c
+0000000   l i n h a   u m \n l i n h a   d
+0000020   o i s \n
+```
+
+**O objeto gravado está em LF**, apesar de `autocrlf=false` e de o arquivo
+estar em CRLF no disco. O `* text=auto` do `.gitattributes` normaliza na
+entrada independentemente da configuração local da máquina.
+
+É o V-24 fechado por demonstração, não por afirmação: a garantia deixou de
+ser propriedade da instalação do git e passou a ser propriedade do
+repositório.
+
+Os três clones foram apagados após a verificação.
+
+#### E2 encerrada
+
+Portão verde nas quatro verificações. **E3 liberada** (Req. 10.6).
