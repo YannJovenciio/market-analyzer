@@ -54,7 +54,7 @@ Simulated trades: 2   Simulated profit: 179130.00
 Etapa somente de leitura. Produz os inventários que as etapas E3, E5 e E8
 consomem.
 
-- [ ] **1.1 Partir de árvore de trabalho limpa e confirmar a preservação do histórico**
+- [x] **1.1 Partir de árvore de trabalho limpa e confirmar a preservação do histórico**
   - Commitar as edições de documentação pendentes (ou guardá-las em stash), até
     `git status --porcelain` devolver **saída vazia**.
   - Rodar `git log --follow -- README.md` (ou outro arquivo movido no
@@ -64,7 +64,7 @@ consomem.
     `design.md` §11, A-1. Não há ação corretiva.
   - _Requisitos: 1.3, 10.4, 10.5_
 
-- [ ] **1.2 (P) Inventariar as chamadas a `str.format()`**
+- [x] **1.2 (P) Inventariar as chamadas a `str.format()`**
   - Buscar `.format(` sob `src/` e anotar arquivo e linha de cada ocorrência.
   - Resultado esperado: **21 ocorrências em 5 arquivos** — `cli.py` (9),
     `csv_loader.py` (3), `ocr_batch.py` (5), `price_ocr.py` (1),
@@ -72,7 +72,7 @@ consomem.
     explicada.
   - _Requisitos: 7.1_
 
-- [ ] **1.3 (P) Varrer os documentos versionados em busca de caminhos obsoletos**
+- [x] **1.3 (P) Varrer os documentos versionados em busca de caminhos obsoletos**
   - Buscar, em todos os arquivos versionados, as cadeias `o/`, `src/data`,
     `src/market_analyzer/initial_data.csv` e `market_analyser`.
   - Classificar cada ocorrência em **instrução** (atualizar) ou **narrativa de
@@ -80,7 +80,7 @@ consomem.
   - Entregar a lista fechada, que é o insumo das tarefas 4.4, 5.1 e do grupo 9.
   - _Requisitos: 1.7, 2.7, 6.4_
 
-- [ ] **1.4 (P) Listar os arquivos rastreados como insumo da auditoria de ignorar**
+- [x] **1.4 (P) Listar os arquivos rastreados como insumo da auditoria de ignorar**
   - Salvar a saída de `git ls-files` fora do repositório (p. ex. em `%TEMP%`),
     para não criar arquivo não rastreado.
   - Essa lista é comparada contra as novas regras de ignorar na tarefa 4.5.
@@ -93,7 +93,7 @@ consomem.
 Nenhuma alteração de sintaxe acontece nesta etapa nem em qualquer etapa
 anterior ao portão P1.
 
-- [ ] **2.1 Ampliar o `pyproject.toml` com grupo `dev`, pytest e ruff**
+- [x] **2.1 Ampliar o `pyproject.toml` com grupo `dev`, pytest e ruff**
   - Acrescentar `[project.optional-dependencies]` com `dev = ["pytest>=9.0",
     "ruff>=0.17"]`.
   - Acrescentar `[tool.pytest.ini_options]` com `minversion = "9.0"`,
@@ -106,7 +106,7 @@ anterior ao portão P1.
     **preservar** `requires-python = ">=3.10"`.
   - _Requisitos: 4.2, 4.3, 5.3, 7.2_
 
-- [ ] **2.2 Criar o ambiente virtual e instalar o projeto em modo editável**
+- [x] **2.2 Criar o ambiente virtual e instalar o projeto em modo editável**
   - `python -m venv .venv`
   - `.\.venv\Scripts\Activate.ps1` — se a política de execução do PowerShell
     bloquear, seguir sem ativação usando `.\.venv\Scripts\python.exe` e
@@ -115,24 +115,34 @@ anterior ao portão P1.
   - Anotar os dois desvios acima; eles precisam constar do README na tarefa 8.1.
   - _Requisitos: 4.1, 4.3_
 
-- [ ] **2.3 Capturar a linha de base do CLI com os caminhos ainda antigos**
+- [x] **2.3 Capturar a linha de base do CLI com os caminhos ainda antigos**
   - `market-analyzer --input src/market_analyzer/initial_data.csv`
   - Salvar a saída **fora do repositório** (p. ex. `%TEMP%\baseline-cli.txt`).
   - Conferir contra o bloco de linha de base no topo deste documento: 20
     amostras, mínimo 110037, máximo 220074.
   - _Requisitos: 2.6, 7.6_
 
-- [ ] **2.4 Portão P1 — suíte verde, CLI instalado e regra do linter provada ativa**
+- [x] **2.4 Portão P1 — suíte verde, CLI instalado e regra do linter provada ativa**
   - `pytest` → **10 testes, 0 falhas, 0 erros de coleta**. A subida de 8 para
     10 é `tests/test_video_sampler.py` passando a executar seus 2 casos.
   - Confirmar na mesma execução que **o binário do Tesseract continua ausente**
     e ainda assim a suíte conclui sem nenhuma falha (Req. 5.4, satisfeito por
     desenho — ver A-7).
   - `market-analyzer --help` → termina sem erro.
-  - `ruff check .` → **exatamente as 21 violações `UP032`** da tarefa 1.2, nos
-    5 arquivos conhecidos, com arquivo e linha. Este é o estado **correto**
-    nesta etapa: é a prova de que a regra está ativa de fato, e não apenas
-    declarada.
+  - `ruff check .` → **exatamente 15 violações `UP032`**, com arquivo e linha,
+    nos 5 arquivos conhecidos: `cli.py` (4: 48, 54, 55, 57), `csv_loader.py`
+    (2: 10, 37), `ocr_batch.py` (5), `price_ocr.py` (1), `video_sampler.py`
+    (3). Este é o estado **correto** nesta etapa: é a prova de que a regra
+    está ativa de fato, e não apenas declarada.
+  - **Correção de 18/11/2026, verificada em execução.** Esta tarefa pedia 21,
+    herdando a contagem de `grep` da tarefa 1.2 e supondo cobertura total do
+    `UP032`. A regra **não reporta chamada a `.format()` cujo argumento
+    contenha literal de string** — em qualquer `target-version`, e mesmo sem
+    conflito de aspas. As 6 não reportadas são `cli.py:49-53`
+    (`stats["count"]`, `stats["minimum"]`, `stats["maximum"]`,
+    `stats["mean"]`, `stats["median"]`) e `csv_loader.py:19`
+    (`", ".join(...)`). 21 − 6 = 15. Consequência: o linter cobre a
+    convenção, mas não a esgota — ver Req. 7.4 e a tarefa 6.8.
   - `git status --porcelain` → só as alterações intencionais do
     `pyproject.toml` (`.venv/` ainda aparecerá até a reescrita do `.gitignore`
     em 4.3; não commitá-lo).
@@ -357,9 +367,18 @@ converteria o template-contrato em f-string inline e desfaria a extração.
   - `ruff check --fix .` — **esta tarefa não pode ser antecipada**: rodada antes
     da tarefa 6.6, a ferramenta transformaria o template-contrato em f-string
     inline e desfaria a extração do `frame_naming`.
-  - Revisar o diff **item a item**. Atenção ao caso
-    `stats["mean"]` dentro de f-string, que vira aspas simples internas —
-    correto no piso 3.10.
+  - **O `--fix` converte 6 dos 12 alvos**, não os 12: `csv_loader.py` 10 e 37,
+    e `cli.py` 48, 54, 55 e 57. O `UP032` não reporta — e portanto não
+    conserta — chamada cujo argumento contenha literal de string (verificado
+    na tarefa 2.4).
+  - **Converter à mão as 6 restantes:** `cli.py:49, 50, 51, 52, 53` e
+    `csv_loader.py:19`. Em `cli.py` usar aspas simples internas
+    (`f"Samples: {stats['count']}"`), válido no piso 3.10. Em
+    `csv_loader.py` extrair o `", ".join(sorted(missing))` para uma
+    variável antes da f-string. **Nenhum comando do portão P4 acusa se alguma
+    for esquecida, exceto a busca por `.format(`** — ela é a verificação
+    completa do critério 7.1, não o `ruff check` limpo.
+  - Revisar o diff **item a item**.
   - Nenhum `# noqa` é introduzido: a exceção do template-contrato foi resolvida
     por extração de função.
   - _Requisitos: 7.1, 7.4, 7.5_

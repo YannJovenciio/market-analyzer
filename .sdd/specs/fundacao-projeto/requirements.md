@@ -283,6 +283,14 @@ revisão humana.
    sem nenhuma violação, incluindo `UP032`.
 4. SE um novo uso de `.format()` para interpolação imediata for introduzido,
    ENTÃO `ruff check` DEVE falhar apontando `UP032`, com arquivo e linha.
+   > **Limite verificado em 18/11/2026 (tarefa 2.4), aceito na revisão.** O
+   > `UP032` **não** reporta chamada cujo argumento contenha literal de string
+   > — p. ex. `stats["mean"]` ou `", ".join(...)` — em qualquer
+   > `target-version` e mesmo sem conflito de aspas. Seis dos 21 usos do
+   > próprio projeto têm essa forma. O linter **cobre a convenção, mas não
+   > a esgota**: a verificação completa do critério 7.1 é a busca por
+   > `.format(` sob `src/` → zero ocorrências, exigida no portão P4
+   > (tarefa 6.10).
 5. ONDE houver exceção legítima à convenção — template que é contrato entre
    módulos, ou formatação preguiçosa de `logging` — o sistema DEVE resolvê-la
    por extração de função ou pelo estilo `%s` do próprio logger, e NÃO por
