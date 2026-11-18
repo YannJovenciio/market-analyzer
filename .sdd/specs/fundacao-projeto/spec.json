@@ -1,0 +1,42 @@
+{
+  "feature_name": "fundacao-projeto",
+  "language": "pt-BR",
+  "created_at": "2026-11-18T00:00:00Z",
+  "updated_at": "2026-11-18T00:00:00Z",
+  "phase": "requirements-approved",
+  "approvals": {
+    "requirements": {
+      "generated": true,
+      "approved": true,
+      "approved_at": "2026-11-18",
+      "notes": "11 requisitos, 70 critérios EARS. Cinco pontos de decisão resolvidos na revisão: data/reference/ versionado para initial_data.csv e ocr_samples.csv; caminhos o/ preservados como evidência histórica; Requisito 11 (V-21) mantido; localização de frame_name/frame_seconds adiada para o design."
+    },
+    "design": {
+      "generated": false,
+      "approved": false
+    },
+    "tasks": {
+      "generated": false,
+      "approved": false
+    }
+  },
+  "ready_for_implementation": false,
+  "related_findings": [
+    "V-04",
+    "V-13",
+    "V-14",
+    "V-15",
+    "V-16",
+    "V-17",
+    "V-18",
+    "V-19",
+    "V-20",
+    "V-21",
+    "V-24"
+  ],
+  "out_of_scope_findings": [
+    "V-22"
+  ],
+  "blocked_by": [],
+  "notes": "Única spec sem bloqueio. Não depende das gravações (H-1) nem das respostas do dono do projeto (H-2 a H-4). ATENÇÃO: o dono moveu manualmente o conteúdo de o/ para a raiz em 18/11/2026, durante a redação da spec. Nada foi commitado; a preservação de histórico (critério 1.3) ainda precisa ser verificada com git log --follow após o commit."
+}
