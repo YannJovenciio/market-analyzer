@@ -241,10 +241,14 @@ arquivos produz um diff ilegível e atrapalha a detecção de renomeação de E3
     `git check-ignore -v data\fixtures\teste.png` → imprime
     `.gitignore:35:!/data/fixtures/**` com código 0 — **regra de negação**,
     ou seja **não ignorado**.
-  - Mover o mesmo arquivo para `data/raw/`:
+  - **Copiar** o mesmo arquivo para `data/raw/` — não mover:
     `git check-ignore -v data\raw\teste.png` → **ignorado**, com a regra
-    `/data/raw/*` (sem `!`) apontada na saída. Apagar o arquivo de teste
-    depois da verificação.
+    `/data/raw/*` (sem `!`) apontada na saída.
+  - > **Correção de 18/11/2026, aplicada na execução deste portão.** A
+    > redação original mandava *mover* o arquivo, o que é incompatível com a
+    > prova independente do item seguinte, que exige **os dois** arquivos de
+    > teste no lugar ao mesmo tempo. Copiar, e apagar os dois `.png` depois
+    > das verificações.
   - **Prova independente, que não depende de interpretar o `check-ignore`:**
     com os dois arquivos de teste no lugar, `git status --porcelain -uall
     data/` lista `data/fixtures/teste.png` e **não** lista
@@ -266,6 +270,17 @@ arquivos produz um diff ilegível e atrapalha a detecção de renomeação de E3
     `.png`, `.mp4` e congêneres).
   - `market-analyzer --input data/reference/initial_data.csv` → saída
     **idêntica** à capturada na tarefa 2.3.
+  - > **Achado de 18/11/2026, na execução deste portão — a comparação crua
+    > de bytes dá falso negativo.** Rodado por executor, o stdout do CLI é um
+    > *pipe* e não um console: o Python usa a página ANSI e escreve em
+    > cp1252, enquanto a linha de base de 2.3 foi capturada em console
+    > `chcp 65001`. Forçar `chcp 65001` no PowerShell **piora** — o filho
+    > segue sem console, emite cp1252, e o pai decodifica como UTF-8. A
+    > identidade foi provada de duas formas: decodificando cada captura na
+    > própria codificação (texto idêntico nas 8 linhas) e, com
+    > `PYTHONIOENCODING=utf-8`, byte a byte (mesmo `sha256`). Isto é o **V-21
+    > em aberto**, não regressão: nada em `cli.py` foi tocado aqui.
+    > Consequência para a tarefa 7.3, onde está anotada.
   - `pytest` → 10 verdes. Commitar.
   - _Requisitos: 2.1, 2.5, 2.6, 3.4, 3.5, 3.7, 10.5, 10.6_
 
@@ -273,20 +288,20 @@ arquivos produz um diff ilegível e atrapalha a detecção de renomeação de E3
 
 ## 5. E4 — Remoção de artefatos obsoletos (Req. 6)
 
-- [ ] **5.1 Corrigir qualquer referência remanescente a `market_analyser` antes de apagar**
+- [x] **5.1 Corrigir qualquer referência remanescente a `market_analyser` antes de apagar**
   - Partir da varredura da tarefa 1.3. Cada ocorrência em módulo, teste ou
     documento é corrigida para `market_analyzer.cli` ou removida.
   - Esta verificação acontece **antes** da exclusão, não depois.
   - _Requisitos: 6.4_
 
-- [ ] **5.2 Remover o atalho `.lnk` e o shim de grafia britânica**
+- [x] **5.2 Remover o atalho `.lnk` e o shim de grafia britânica**
   - `git rm "src/market_analyzer/20261116-1555-54.7150164.mp4.lnk"`
   - `git rm src/market_analyzer/market_analyser.py`
   - `git rm` tira do índice e do disco em uma operação só, que é o que os
     critérios 6.1 e 6.3 pedem juntos.
   - _Requisitos: 6.1, 6.2_
 
-- [ ] **5.3 Portão P3 — obsoletos fora e ponto de entrada intacto**
+- [x] **5.3 Portão P3 — obsoletos fora e ponto de entrada intacto**
   - `git ls-files` → **não lista** nenhum dos dois arquivos; nenhum dos dois
     está no disco.
   - `market-analyzer --help` → funciona; o entry point
@@ -459,6 +474,13 @@ converteria o template-contrato em f-string inline e desfaria a extração.
   - Todos os números **idênticos** à linha de base. A **única** diferença
     admitida em relação ao portão P4 é a acentuação do nome do item passar a
     sair correta.
+  - > **Pré-aviso vindo do portão P2 (18/11/2026).** A comparação acima só
+    > vale se ler os **bytes que o processo escreve**, e não o texto já
+    > redecodificado pelo terminal ou pelo executor. Fora de console real o
+    > Python escreve em cp1252, e a comparação crua tanto acusa diferença
+    > inexistente quanto pode esconder uma real. Capturar redirecionando
+    > para arquivo e conferir os bytes (p. ex. `sha256`); a verificação "em
+    > console real" é de olho, em console de verdade. É o V-21.
   - `pytest` → verde. Commitar.
   - _Requisitos: 7.6, 11.1, 11.3, 11.4_
 

@@ -1696,3 +1696,255 @@ commit.
 #### E3 encerrada
 
 Portão verde nas oito verificações. **E4 liberada** (Req. 10.6).
+
+---
+
+## E4 — Remoção de artefatos obsoletos (Req. 6)
+
+### 5.1 — Nenhuma referência a `market_analyser` a corrigir ✅
+
+**Data:** 18/11/2026
+**Requisitos:** 6.4
+
+Tarefa de **verificação**, não de alteração: o Req. 6.4 é condicional ("SE
+algum módulo, teste ou documento referenciar `market_analyser`, ENTÃO a
+referência DEVE ser corrigida... antes da exclusão"). Nada de runtime muda
+aqui, logo **nenhum teste foi escrito** — não há comportamento novo a cobrir.
+Se a varredura tivesse achado referência em código, aí sim o ciclo test-first
+valeria; não achou.
+
+A varredura da tarefa 1.3 foi **reexecutada do zero**, e não apenas citada: a
+árvore mudou desde então (E1, E2 e E3 commitadas; CSVs em `data/reference/`,
+`.gitignore` reescrito). Três passagens independentes, cada uma mais larga que
+a anterior.
+
+#### 1 — Código, testes e configuração: zero
+
+```
+$ git grep -nI 'market_analyser' -- src tests pyproject.toml .gitignore .gitattributes
+(saída vazia, exit 1)
+```
+
+Sem ocorrência nem com `-i` (`analyser` em qualquer caixa) sob `src` e
+`tests`. O achado da 1.3 **se mantém**.
+
+#### 2 — Árvore versionada inteira: 21 linhas, nenhuma é instrução
+
+| Onde | Linhas | Classificação |
+|---|---:|---|
+| `.sdd/specs/fundacao-projeto/` (`design.md` 4, `impl-log.md` 8, `requirements.md` 4, `tasks.md` 3) | 19 | documento de plano → **não tocar** |
+| `.sdd/steering/structure.md:107` | 1 | narrativa de achado (V-19) → preservar |
+| `validacao-inicial.md:252` | 1 | narrativa de achado (V-19) → preservar |
+
+As 8 linhas do `impl-log.md` são a contagem **antes** desta entrada, que
+naturalmente acrescenta outras.
+
+Fora da spec restam **duas** ocorrências, uma por arquivo, e as duas são o
+mesmo achado V-19:
+
+- `validacao-inicial.md:252` — título `#### 🔵 V-19 · market_analyser.py é
+  dívida sem motivo`. Descreve o defeito; não manda ninguém usar o módulo.
+- `.sdd/steering/structure.md:107` — linha do V-19 na tabela "Pendências
+  estruturais", cuja coluna *Correção prevista* diz "Remover". É a instrução
+  **de apagar**, que continua correta até a tarefa 5.2 executá-la.
+
+Nenhuma das duas recebe anotação de localização: a régua do A-2 anota *onde a
+coisa está hoje* para caminho que **se moveu**, e o shim não se move — é
+apagado. A baixa das duas linhas é das tarefas **9.1** e **9.2** (E8), onde já
+estava prevista, não desta.
+
+> **Deslocamento desde a 1.3:** o V-19 de `validacao-inicial.md` passou da
+> linha **248** para a **252**, empurrado pelas anotações que a tarefa 4.4
+> acrescentou ao V-06, V-16 e V-17. `structure.md:107` não se moveu. O
+> inventário da 1.3 permanece válido; só os números mudaram.
+
+#### 3 — Disco inteiro, binários inclusive: dois artefatos gerados
+
+Passagem mais larga que a da 1.3, que só olhou arquivos **versionados**. Com
+`grep -ra` sobre tudo exceto `.git/` e `.venv/`, aparecem dois caminhos que o
+`git grep` não enxerga:
+
+| Caminho | Situação | Veredito |
+|---|---|---|
+| `src/market_analyzer.egg-info/SOURCES.txt:5` | não rastreado; ignorado por `.gitignore:4` (`*.egg-info/`) | metadado de build, regenerado na próxima instalação |
+| `.ruff_cache/0.17.5/` (2 arquivos) | não rastreados; ignorados por `.gitignore:7` | cache binário do linter |
+
+Nenhum dos dois é módulo, teste ou documento — são **saída de ferramenta**,
+reconstruída a cada execução. Não são alvo do Req. 6.4 e não foram tocados.
+Ficam registrados porque explicam por que a 1.3 relatava cinco ocorrências de
+documento e esta tarefa relata duas: as listas não divergem, as varreduras é
+que têm alcances diferentes.
+
+#### 4 — O shim não se referencia, e o ponto de entrada não passa por ele
+
+```
+$ cat src/market_analyzer/market_analyser.py
+"""Backward-compatible entry point for the previous filename."""
+
+from market_analyzer.cli import main
+
+
+if __name__ == "__main__":
+    main()
+```
+
+Três fatos que a tarefa 5.2 herda prontos:
+
+1. O corpo do shim **não contém** a cadeia `market_analyser` — importa
+   `market_analyzer.cli`, a grafia correta. Apagá-lo não deixa referência
+   órfã.
+2. `pyproject.toml:24` declara
+   `market-analyzer = "market_analyzer.cli:main"` e
+   `entry_points.txt` instalado repete
+   `market-analyzer = market_analyzer.cli:main`. O console script **não
+   atravessa** o shim — o Req. 6.5 está garantido por desenho, antes mesmo da
+   remoção.
+3. O atalho `src/market_analyzer/20261116-1555-54.7150164.mp4.lnk` (3029
+   bytes) não contém a cadeia nem em ASCII nem em UTF-16LE — verificado byte a
+   byte, já que `grep -I` o trataria como binário e o pularia.
+
+#### 5 — Suíte intacta
+
+```
+$ .venv/Scripts/python.exe -m pytest -q
+..........                                     [100%]
+10 passed in 0.14s
+```
+
+Esperado: nada foi alterado. Serve de linha de base imediata para o portão P3,
+que exige as mesmas 10 verdes **depois** das duas exclusões.
+
+#### Resultado
+
+**Nada a corrigir.** O Req. 6.4 está satisfeito por vacuidade: a premissa "SE
+algum módulo, teste ou documento referenciar `market_analyser`" é falsa para
+módulo e teste, e os dois documentos que citam o nome são narrativa de achado
+que o A-2 manda preservar. Nenhum arquivo foi editado nesta tarefa além deste
+diário e da marcação em `tasks.md`.
+
+**Tarefa 5.2 liberada, sem impedimento.** Única consequência a lembrar lá: o
+`SOURCES.txt` do `egg-info` continuará listando o shim até a próxima
+instalação editável, sem efeito sobre o console script.
+
+---
+
+### 5.2 — Atalho `.lnk` e shim de grafia britânica removidos ✅
+
+**Data:** 18/11/2026
+**Requisitos:** 6.1, 6.2
+
+Duas exclusões, um `git rm` cada:
+
+```
+git rm "src/market_analyzer/20261116-1555-54.7150164.mp4.lnk"
+git rm src/market_analyzer/market_analyser.py
+```
+
+As exclusões foram executadas na sessão do desenvolvedor, fora do executor.
+Esta entrada registra a **verificação do efeito**, não a digitação dos
+comandos.
+
+#### Efeito conferido nos dois planos que o Req. 6.1 exige juntos
+
+| Plano | Verificação | Resultado |
+|---|---|---|
+| Disco | `ls src/market_analyzer/` | nenhum dos dois presente |
+| Índice | `git status --porcelain` | `D ` para ambos — deleção já no índice |
+| Árvore inteira | `git ls-files \| grep -E '\.lnk\|market_analyser'` | saída vazia |
+
+O `D` com espaço à direita é a assinatura do `git rm`: a deleção está
+**staged**, não apenas no working tree. Fosse ` D`, o arquivo teria sido
+apagado só do disco e o índice continuaria a rastreá-lo — meio caminho que o
+Req. 6.1 não aceita.
+
+#### O atalho era de fato irrecuperável — resolvido antes de apagar
+
+O Req. 6.1 justifica a remoção dizendo que o atalho "aponta para pasta
+temporária do Windows, não é portável e não resolve". A premissa foi
+verificada empiricamente antes da exclusão, via `WScript.Shell`:
+
+```
+TargetPath  : ...\Microsoft.ScreenSketch_8wekyb3d8bbwe\TempState\Recordings\
+              20261116-1555-54.7150164.mp4
+Existe alvo?: False
+```
+
+Três confirmações de uma vez: é gravação da Ferramenta de Captura do Windows;
+mora em `TempState`, temporária por definição; e **o alvo já não existia**.
+Além disso, o `WorkingDirectory` apontava para um perfil de usuário diferente
+do da máquina atual — o atalho veio de outro perfil, coerente com o fluxo em
+que as capturas são produzidas fora da máquina de desenvolvimento. Apagar não
+destruiu nenhum caminho de acesso a dado: não havia caminho.
+
+#### Resultado
+
+Req. 6.1 e 6.2 satisfeitos. Nenhum arquivo além dos dois foi tocado — o commit
+da etapa (adiante) contém exatamente duas deleções e nada mais.
+
+---
+
+### 5.3 — Portão P3: obsoletos fora e ponto de entrada intacto ✅
+
+**Data:** 18/11/2026
+**Requisitos:** 6.1, 6.3, 6.5, 10.5, 10.6
+
+#### As quatro verificações do portão
+
+```
+$ git ls-files | grep -E '\.lnk|market_analyser'
+(saída vazia)                                        → Req. 6.3 ✅
+
+$ .venv/Scripts/market-analyzer --help
+usage: market-analyzer [-h] [--version] --input INPUT ...
+                                                     → Req. 6.5 ✅
+
+$ .venv/Scripts/python -m pytest -q
+..........                            [100%]
+10 passed in 1.25s                                   → Req. 10.5 ✅
+
+$ .venv/Scripts/python -c "import market_analyzer.market_analyser"
+ModuleNotFoundError: No module named
+  'market_analyzer.market_analyser'                  → remoção efetiva ✅
+```
+
+A quarta não está na redação do portão e foi acrescentada: `git ls-files`
+prova que o git não rastreia mais o shim, mas não prova que o **intérprete**
+deixou de encontrá-lo. Com instalação editável, um `.py` órfão no disco
+continuaria importável sem aparecer no índice. O `ModuleNotFoundError` fecha
+essa brecha.
+
+O Req. 6.5 confirma na prática o que a tarefa 5.1 já havia estabelecido por
+desenho: o console script declara `market_analyzer.cli:main` e nunca
+atravessou o shim, então a remoção não tinha como quebrá-lo. A verificação é
+barata e vale como rede.
+
+#### Commit da etapa
+
+`1e8e256` — `refactor: remove wrong files`, contendo exatamente:
+
+```
+src/market_analyzer/20261116-1555-54.7150164.mp4.lnk | Bin 3029 -> 0 bytes
+src/market_analyzer/market_analyser.py               |   8 --------
+2 files changed, 8 deletions(-)
+```
+
+Veio de `--amend` sobre `1fd204f`, que havia sido publicado com a mensagem
+`fix: remove wrong files` — trocada por `refactor:`, já que nada estava
+quebrado em funcionamento. Consequência operacional: `main` ficou
+`ahead 1, behind 1` de `origin/main` e exige `push --force-with-lease` para
+reconciliar.
+
+#### Divergência de ordem, registrada por honestidade
+
+A redação do portão manda commitar **ao fim** das verificações, com o diário
+já escrito. Na prática o commit do código veio primeiro e este registro
+depois, em commit separado. As evidências acima foram todas coletadas **antes**
+do commit `1e8e256`, não reconstruídas a posteriori — mas quem ler o histórico
+verá o código sair num commit e a baixa documental em outro. Sem efeito sobre
+os requisitos; anotado para não parecer lapso.
+
+#### Resultado
+
+**Etapa E4 encerrada.** Requisito 6 integralmente satisfeito: 6.1 e 6.2 pela
+remoção, 6.3 pela ausência no índice, 6.4 por vacuidade (tarefa 5.1) e 6.5
+pelo `--help` vivo. Próxima etapa: **E5**, tarefa 6.1.
