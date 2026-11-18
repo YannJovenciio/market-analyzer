@@ -119,8 +119,10 @@ mudar, o mesmo recorte passa a ler outro número — sem erro, sem aviso.
 
 #### 🔴 V-06 · O OCR já erra em 25% das amostras
 
-Comparação entre `initial_data.csv` (transcrição manual) e
-`src/data/processed/ocr_samples.csv` (saída da máquina):
+Comparação entre `initial_data.csv` *(hoje em
+`data/reference/initial_data.csv`)* (transcrição manual) e
+`src/data/processed/ocr_samples.csv` *(hoje em
+`data/reference/ocr_samples.csv`)* (saída da máquina):
 
 | Linha | Manual | OCR | Erro |
 |---|---:|---:|---|
@@ -229,15 +231,17 @@ para esse nível a mais.
 
 #### 🟡 V-16 · Dados misturados com código
 
-`initial_data.csv` está **dentro do pacote Python**
-(`src/market_analyzer/`), e `src/data/` está dentro da pasta de distribuição
-do setuptools (`where = ["src"]`). Dados não pertencem a `src/`.
+`initial_data.csv` *(hoje em `data/reference/initial_data.csv`)* está
+**dentro do pacote Python** (`src/market_analyzer/`), e `src/data/` *(hoje em
+`data/` na raiz)* está dentro da pasta de distribuição do setuptools
+(`where = ["src"]`). Dados não pertencem a `src/`.
 
 #### 🟡 V-17 · `.gitignore` não faz o que pretende
 
 As regras `data/raw/` e `data/processed/` contêm barra no meio, então o git as
-ancora na pasta do próprio `.gitignore` → `o/data/...`. O caminho real é
-`o/src/data/processed/`. Por isso `ocr_samples.csv` foi versionado apesar da
+ancora na pasta do próprio `.gitignore` → `o/data/...` *(hoje em `data/` na
+raiz)*. O caminho real é `o/src/data/processed/` *(hoje em
+`data/reference/`)*. Por isso `ocr_samples.csv` foi versionado apesar da
 regra existir.
 
 #### 🟡 V-18 · `.sdd/` não existe

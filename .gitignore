@@ -1,21 +1,37 @@
+# --- Ambiente e ferramenta ---
 __pycache__/
 *.py[cod]
-.pytest_cache/
-.venv/
 *.egg-info/
+.venv/
+.pytest_cache/
+.ruff_cache/
 
-# Raw captures and generated artifacts
+# --- Editor e logs ---
+.idea/
+.vscode/
+*.log
+
+# --- Mídia: ignorada em qualquer lugar por padrão ---
 *.mp4
 *.avi
 *.mov
 *.png
 *.jpg
 *.jpeg
-data/raw/
-data/processed/
 
-# Local tooling
-.idea/
-.vscode/
-*.log
+# --- Dados gerados e brutos ---
+# A barra inicial ancora na raiz do repositório. A falta dela era o V-17:
+# "data/raw/" com barra no meio já é ancorado, mas na pasta do .gitignore,
+# que antes não era a raiz do conteúdo.
+# Ignora-se o CONTEÚDO (/*), não a pasta: o git não consegue reincluir nada
+# dentro de um diretório excluído, e as pastas precisam existir em um clone.
+/data/raw/*
+!/data/raw/.gitkeep
+/data/processed/*
+!/data/processed/.gitkeep
 
+# --- Exceções deliberadas (obrigatoriamente DEPOIS das regras acima) ---
+# Fixtures rotuladas: gabarito de teste, versionadas apesar de *.png (Req. 3.3).
+!/data/fixtures/**
+# Material de referência estável: nunca alcançado pelas regras de dados (Req. 2.4).
+!/data/reference/**

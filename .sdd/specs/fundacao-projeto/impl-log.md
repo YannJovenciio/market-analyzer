@@ -577,9 +577,16 @@ $ git status --porcelain
 ?? .sdd/specs/fundacao-projeto/impl-log.md
 ```
 
-`.venv/` já é coberto pela regra existente do `.gitignore`, e a instalação
-editável moderna não deixa `egg-info` na árvore do projeto. Nada a limpar
+`.venv/` já é coberto pela regra existente do `.gitignore`. Nada a limpar
 antes do P1 (Req. 10.5).
+
+> **Correção registrada na tarefa 4.2.** Escrevi aqui que "a instalação
+> editável moderna não deixa `egg-info` na árvore do projeto". **Falso** — a
+> instalação criou `src/market_analyzer.egg-info/`. A conclusão continua
+> válida, mas por outro motivo: o diretório é coberto pela regra
+> `*.egg-info/` que já existia no `.gitignore`, e por isso nunca apareceu no
+> `git status`. O mesmo vale para `src/market_analyzer/__pycache__/`, coberto
+> por `__pycache__/`.
 
 #### Observado agora, para o portão P1 (tarefa 2.4)
 
@@ -1072,3 +1079,620 @@ Os três clones foram apagados após a verificação.
 #### E2 encerrada
 
 Portão verde nas quatro verificações. **E3 liberada** (Req. 10.6).
+
+---
+
+## E3 — Dados fora do código e regras de ignorar ancoradas (Req. 2, 3.1–3.7)
+
+### 4.1 — Árvore `data/` na raiz ✅
+
+**Data:** 18/11/2026
+**Requisitos:** 2.2
+
+Quatro pastas criadas na raiz, cada uma com um `.gitkeep` vazio (0 byte):
+
+```
+data/fixtures/.gitkeep
+data/processed/.gitkeep
+data/raw/.gitkeep
+data/reference/.gitkeep
+```
+
+`reference/` recebeu o marcador mesmo indo conter os dois CSVs da tarefa 4.2,
+pela decisão da revisão de 18/11: sem ele a pasta existiria apenas enquanto
+tivesse conteúdo, e bastaria alguém mover os CSVs para ela evaporar junto. O
+marcador torna a garantia do Req. 2.2 estrutural em vez de contingente.
+
+#### Achado: metade dos marcadores está **ignorada** pelas regras atuais
+
+```
+$ git status --porcelain
+?? data/
+```
+
+Parece inofensivo, mas não é. Arquivo a arquivo:
+
+| Marcador | Estado | Regra |
+|---|---|---|
+| `data/raw/.gitkeep` | **IGNORADO** | `.gitignore:14:data/raw/` |
+| `data/processed/.gitkeep` | **IGNORADO** | `.gitignore:15:data/processed/` |
+| `data/fixtures/.gitkeep` | livre | — |
+| `data/reference/.gitkeep` | livre | — |
+
+**É o V-17 invertendo de polaridade.** As regras `data/raw/` e
+`data/processed/` contêm barra no meio, então o git as ancora na pasta do
+próprio `.gitignore`, ou seja na **raiz**. Enquanto os dados moravam em
+`src/data/processed/`, essas regras não alcançavam nada — era esse o defeito,
+e foi por isso que `ocr_samples.csv` acabou versionado. Agora que `data/`
+existe de fato na raiz, as mesmas regras passam a alcançar exatamente os
+caminhos novos, e excluem a pasta inteira.
+
+Um diretório excluído não admite reinclusão: **nada sob `data/raw/` pode ser
+readicionado enquanto a regra for `data/raw/`**, nem com `!`. Por isso a
+tarefa 4.3 troca para `/data/raw/*` + `!/data/raw/.gitkeep` — ignorar o
+*conteúdo*, nunca a *pasta*.
+
+#### Nada foi forçado para o índice
+
+Seria possível contornar com `git add -f`, e seria errado: o portão P2 existe
+para provar que as **regras** deixam os marcadores passarem. Forçá-los agora
+faria o portão medir o `-f`, não o `.gitignore`.
+
+A cadeia é: **4.1** cria → **4.3** corrige as regras → **4.5** verifica e
+commita. Até lá, `data/raw/` e `data/processed/` permanecem fora do índice, e
+o Req. 2.2 ("presentes em um clone limpo mesmo quando vazios") só fica
+satisfeito ao fim de E3 — não nesta tarefa.
+
+#### Sem commit
+
+E3 commita uma vez só, no portão P2 (tarefa 4.5), como `design.md` §9 E3
+descreve.
+
+---
+
+### 4.2 — Os dois CSVs em `data/reference/` ✅
+
+**Data:** 18/11/2026
+**Requisitos:** 2.1, 2.3, 2.4, 2.5
+
+```
+$ git mv src/market_analyzer/initial_data.csv data/reference/initial_data.csv
+$ git mv src/data/processed/ocr_samples.csv   data/reference/ocr_samples.csv
+```
+
+#### Movidos, não copiados — prova em dois níveis
+
+```
+$ git diff --cached --name-status --find-renames
+R100    src/market_analyzer/initial_data.csv    data/reference/initial_data.csv
+R100    src/data/processed/ocr_samples.csv      data/reference/ocr_samples.csv
+```
+
+`R100` é 100% de similaridade. Mais forte que isso: **o blob é literalmente o
+mesmo objeto** nos dois casos —
+
+| Arquivo | SHA do blob em `HEAD` | SHA no índice |
+|---|---|---|
+| `initial_data.csv` | `1564a076…` | **`1564a076…`** |
+| `ocr_samples.csv` | `bc4e288e…` | **`bc4e288e…`** |
+
+Nenhum byte mudou. A linha de base do CLI (tarefa 2.3) não pode ter sido
+afetada pela movimentação — o que o portão P2 vai reconfirmar executando o
+CLI pelo caminho novo.
+
+> A verificação por `git log --follow` só é possível **depois** do commit, que
+> acontece no portão P2 (tarefa 4.5). Fica anotada para lá.
+
+#### `src/data/` removida
+
+O `git mv` tirou o arquivo mas deixou os diretórios vazios no disco — git não
+versiona diretório. Conferido que não sobrara nada (`find src/data -type f` →
+0 arquivos, nem ocultos) e removidos `src/data/processed/` e `src/data/` com
+`rmdir`, que se recusa a apagar pasta não vazia. `src/` agora contém só o
+pacote.
+
+#### `pyproject.toml` não declara nada de dados — confirmado
+
+```
+$ grep -niE "package-data|package_data|include-package-data" pyproject.toml
+(vazio)
+```
+
+Nada foi acrescentado. A separação do Req. 2.1 é feita **tirando os dados de
+dentro de `src/`**, não configurando o empacotador para excluí-los — que é
+uma solução que depende de alguém lembrar de mantê-la.
+
+#### Os CSVs não estão ignorados no destino
+
+```
+$ git check-ignore -v --no-index data/reference/initial_data.csv   → livre
+$ git check-ignore -v --no-index data/reference/ocr_samples.csv    → livre
+```
+
+Mesmo sob o `.gitignore` **antigo**, que ainda não foi reescrito. Confirma a
+previsão da tarefa 1.4: mover antes de corrigir as regras (4.3) não é
+armadilha. Req. 2.5 e 3.5 encaminhados; a prova formal é o portão P2.
+
+#### Estado
+
+```
+R  src/market_analyzer/initial_data.csv -> data/reference/initial_data.csv
+R  src/data/processed/ocr_samples.csv   -> data/reference/ocr_samples.csv
+?? data/fixtures/
+?? data/reference/.gitkeep
+```
+
+`data/raw/.gitkeep` e `data/processed/.gitkeep` continuam **ausentes da lista
+por estarem ignorados** — o achado da tarefa 4.1, que a 4.3 resolve. Sem
+commit; E3 commita uma vez só no portão P2.
+
+---
+
+### 4.3 — `.gitignore` reescrito com ancoragem na raiz ✅
+
+**Data:** 18/11/2026
+**Requisitos:** 3.1, 3.2, 3.3, 3.5, 3.6
+
+Arquivo substituído pelo conteúdo de `design.md` D-5, nos cinco blocos e na
+ordem especificada. 37 linhas, CRLF (como o arquivo anterior).
+
+#### Os quatro marcadores foram destravados
+
+O problema da tarefa 4.1 — `data/raw/.gitkeep` e `data/processed/.gitkeep`
+ignorados — está resolvido. `git status --porcelain -uall data/`:
+
+```
+A  data/reference/initial_data.csv
+A  data/reference/ocr_samples.csv
+?? data/fixtures/.gitkeep
+?? data/processed/.gitkeep      ← antes invisível
+?? data/raw/.gitkeep            ← antes invisível
+?? data/reference/.gitkeep
+```
+
+`/data/raw/*` exclui o **conteúdo** e não a pasta, então a negação
+`!/data/raw/.gitkeep` passa a valer — que é exatamente o motivo pelo qual
+D-5 escolheu `/*` em vez de `/`.
+
+#### Comportamento verificado com arquivos reais
+
+Criado um `.png` descartável em cada pasta:
+
+| Arquivo | `git status -uall` | `git add --dry-run` |
+|---|---|---|
+| `data/fixtures/teste.png` | **listado** | `add 'data/fixtures/teste.png'` ✅ |
+| `data/raw/teste.png` | **ausente** | recusado: *"paths are ignored by one of your .gitignore files"* ✅ |
+
+A negação `!/data/fixtures/**` vence o `*.png` global porque vem **depois**
+dele. Os dois arquivos de teste foram apagados.
+
+---
+
+#### ⚠️ Achado grave: o portão P2 estava escrito sobre uma leitura errada do `git check-ignore`
+
+Ao conferir as regras eu interpretei a saída do `check-ignore` pelo código de
+saída, e errei. Medindo:
+
+```
+$ git check-ignore -v README.md                      → (nada)        exit=1
+$ git check-ignore -v data/raw/teste.png             → /data/raw/*   exit=0
+$ git check-ignore -v data/fixtures/teste.png        → !/data/fixtures/**   exit=0
+```
+
+> **`git check-ignore -v` sai com código 0 e imprime a regra sempre que
+> alguma casa — inclusive quando a regra é uma negação.** Código de saída e
+> presença de saída **não** distinguem "ignorado" de "reincluído". Quem
+> distingue é o `!` no início do padrão impresso.
+
+Isso contamina três expectativas do portão P2 e um parágrafo do D-5:
+
+| Onde | Dizia | É |
+|---|---|---|
+| 4.5, fixtures | "não ignorado (saída vazia, código 1)" | imprime `!/data/fixtures/**`, código 0 |
+| 4.5, `data/raw/` | "ignorado, com `/data/raw/*` apontada" | **correto** |
+| 4.5, `reference` | "não ignorado" | imprime `!/data/reference/**`, código 0 |
+| 4.5 e D-5, auditoria do Req. 3.7 | "saída vazia" | **duas linhas** |
+
+A auditoria, rodada exatamente como estava escrita:
+
+```
+$ git ls-files | git check-ignore -v --no-index --stdin
+.gitignore:37:!/data/reference/**    data/reference/initial_data.csv
+.gitignore:37:!/data/reference/**    data/reference/ocr_samples.csv
+```
+
+E a tarefa mandava: *"Se algum arquivo aparecer, removê-lo do índice com
+`git rm --cached` antes de seguir"*. Seguir isso ao pé da letra **apagaria do
+índice os dois CSVs de referência** — violando de uma vez os Req. 2.4, 2.5 e
+3.5, que mandam mantê-los versionados. O portão destruiria o que ele existe
+para proteger.
+
+#### Correção aplicada
+
+A intenção do Req. 3.7 continua válida: nenhum arquivo rastreado pode estar
+ignorado. O que muda é o comando.
+
+```
+$ git ls-files | git check-ignore -v --no-index --stdin | grep -v ":!"
+(saída vazia)
+```
+
+Filtrando as negações — que são justamente as linhas seguras — a auditoria
+fica vazia **por mérito**. Só um arquivo casado por regra **sem** `!` é
+defeito, e aí sim sai do índice com `git rm --cached`.
+
+Três documentos ajustados:
+
+- **`tasks.md` 4.5** — as três expectativas corrigidas, o `grep -v ":!"`
+  acrescentado à auditoria, uma nota de advertência no topo da tarefa, e uma
+  **prova independente** por `git status -uall` + `git add --dry-run`, que
+  não depende de interpretar o `check-ignore`.
+- **`design.md` D-5** — nota no parágrafo "Auditoria do Req. 3.7".
+- **`spec.json`** — correção registrada em `notes`.
+
+Nenhum requisito foi alterado: o 3.7 pede que nenhum rastreado esteja
+ignorado, e continua pedindo isso. O que estava errado era o instrumento de
+medida.
+
+#### Sem commit
+
+E3 commita uma vez só, no portão P2 (tarefa 4.5) — agora com o portão
+corrigido.
+
+---
+
+### 4.4 — Caminhos de dados atualizados nos documentos ✅
+
+**Data:** 18/11/2026
+**Requisitos:** 2.7
+
+Executada sobre a **lista fechada da tarefa 1.3**, sem nova varredura
+exploratória: bloco B (a única instrução) e as anotações de localização do
+bloco C. Tarefa puramente documental — nenhum código tocado, nenhum teste a
+escrever.
+
+#### B — A instrução, atualizada (1 ocorrência)
+
+`README.md:15`, antes:
+
+```
+- `src/data`: dados locais de desenvolvimento; capturas brutas nao devem ser versionadas.
+```
+
+Depois (4 linhas, sem acentuação, como o resto do arquivo):
+
+```
+- `data`: dados do projeto, na raiz e fora de `src`, em quatro subpastas —
+  `data/raw` (videos e frames capturados) e `data/processed` (CSVs gerados
+  pelo pipeline) nao sao versionadas; `data/fixtures` (frames rotulados a mao)
+  e `data/reference` (series de referencia) sao versionadas.
+```
+
+As quatro subpastas aparecem nomeadas, cada uma com o que guarda e se é
+versionada — o que o `src/data` anterior não dizia. A afirmação sobre captura
+bruta não se perdeu: virou a metade "não versionadas" da frase.
+
+As três falsidades vizinhas do V-15 (`storage` nas linhas 12, `src/tests` na
+14, Git na 27) **continuam lá**: são da tarefa 8.1, que reescreve o README
+inteiro. A 4.4 corrige só a linha de caminho de dados.
+
+#### C — Narrativa de achado: preservada, com a localização atual ao lado
+
+Régua do A-2 aplicada nas seis linhas do inventário. O caminho antigo
+permanece intacto como evidência; a anotação vem depois dele, entre
+`*(hoje em ...)*`.
+
+| Achado | Caminho preservado | Anotação acrescentada |
+|---|---|---|
+| **V-06** | `initial_data.csv` | `data/reference/initial_data.csv` |
+| **V-06** | `src/data/processed/ocr_samples.csv` | `data/reference/ocr_samples.csv` |
+| **V-16** | `initial_data.csv` | `data/reference/initial_data.csv` |
+| **V-16** | `src/data/` | `data/` na raiz |
+| **V-17** | `o/data/...` | `data/` na raiz |
+| **V-17** | `o/src/data/processed/` | `data/reference/` |
+
+Os três parágrafos foram requebrados para acomodar as anotações dentro da
+largura do arquivo. Nenhuma palavra do texto original foi removida ou
+reescrita — em particular, o tempo verbal continua no presente ("está",
+"contêm"), porque **dar baixa nos achados é a tarefa 9.1**, não esta. As
+linhas deslocaram: V-06 passou de 122–123 para 122–125, V-16 de 232–233 para
+234–236 e V-17 de 239–240 para 242–244.
+
+#### O que foi deliberadamente deixado em paz
+
+| Alvo | Por quê | Dono |
+|---|---|---|
+| V-14, V-15, V-18, V-19 e as linhas 326, 391, 443 de `validacao-inicial.md` | narrativa sem caminho de dados a anotar; falta a baixa | 9.1 |
+| `.sdd/steering/structure.md` (4 linhas) | tabela de pendências, baixa dos achados | 9.2 |
+| Resto do `README.md` | reescrita completa | 8.1 |
+| `tasks.md:119`, `design.md:886`, `tasks.md:190-191` | instrução operacional que roda **antes** da movimentação de E3; atualizar quebraria a tarefa que a contém | ninguém — ficam como estão |
+
+#### Verificação
+
+Varredura do 1.3 reexecutada nos dois arquivos editados:
+
+```
+$ grep -nE 'market_analyser|src/data|initial_data\.csv|(^|[^A-Za-z0-9_.-])o/' README.md
+(saída vazia)
+```
+
+`README.md` ficou **sem nenhuma** das quatro cadeias — o Req. 2.7 está
+satisfeito do lado da instrução. Em `validacao-inicial.md` as cadeias
+permanecem, por desenho (A-2), e as **sete** linhas restantes (218, 221, 229,
+252, 326, 391 e 443, ex-216, 219, 227, 248, 322, 387 e 439) são exatamente as
+do inventário previstas para 9.1 — nenhuma delas é instrução.
+
+#### Sem commit
+
+E3 commita uma vez só, no portão P2 (tarefa 4.5).
+
+---
+
+### 4.5 — Portão P2 ✅ **verde**
+
+**Data:** 18/11/2026
+**Requisitos:** 2.1, 2.5, 2.6, 3.4, 3.5, 3.7, 10.5, 10.6
+
+Executado já com a correção de 18/11/2026 incorporada ao `tasks.md`: o que
+distingue "ignorado" de "reincluído" é o **`!` no início do padrão impresso**,
+nunca o código de saída nem a presença de saída. As oito verificações
+passaram de primeira; nenhuma remediação foi necessária.
+
+> **Desvio deliberado de procedimento.** O `tasks.md` manda *mover* o `.png`
+> de teste de `fixtures/` para `raw/`, mas a prova independente do mesmo item
+> exige "os dois arquivos de teste no lugar". Em vez de mover, o arquivo foi
+> **copiado**, de modo que os dois existissem ao mesmo tempo. As duas
+> verificações de `check-ignore` saem idênticas e a prova independente fica
+> exercitável.
+
+#### ✅ 1. `data/fixtures/teste.png` — casado por **negação**, logo não ignorado
+
+```
+$ printf 'png-descartavel\n' > data/fixtures/teste.png
+$ git check-ignore -v data/fixtures/teste.png
+.gitignore:35:!/data/fixtures/**	data/fixtures/teste.png
+exit=0
+```
+
+Linha, número e texto da regra batem com o esperado: `.gitignore:35` e
+`!/data/fixtures/**`. O `!` inicial é a prova — **não ignorado**, apesar de
+`*.png` estar na lista de mídia global (Req. 3.3).
+
+#### ✅ 2. `data/raw/teste.png` — casado por regra **sem** `!`, logo ignorado
+
+```
+$ cp data/fixtures/teste.png data/raw/teste.png
+$ git check-ignore -v data/raw/teste.png
+.gitignore:28:/data/raw/*	data/raw/teste.png
+exit=0
+```
+
+Regra `/data/raw/*`, **sem** negação: ignorado. Mesmo código de saída do item
+1 e mesma presença de saída — a diferença está só no `!`, exatamente como a
+correção previa.
+
+#### ✅ 3. Prova independente do critério 3.4 — sem interpretar o `check-ignore`
+
+```
+$ git status --porcelain -uall data/
+A  data/reference/initial_data.csv
+A  data/reference/ocr_samples.csv
+?? data/fixtures/.gitkeep
+?? data/fixtures/teste.png
+?? data/processed/.gitkeep
+?? data/raw/.gitkeep
+?? data/reference/.gitkeep
+```
+
+Com os **dois** arquivos de teste no disco, o `status` lista
+`data/fixtures/teste.png` e **não** lista `data/raw/teste.png`. Os quatro
+`.gitkeep` aparecem, inclusive os de `raw/` e `processed/`, o que confirma de
+quebra as exceções `!/data/raw/.gitkeep` e `!/data/processed/.gitkeep`.
+
+```
+$ git add --dry-run data/raw/teste.png
+The following paths are ignored by one of your .gitignore files:
+data/raw/teste.png
+hint: Use -f if you really want to add them.
+exit=1
+
+$ git add --dry-run data/fixtures/teste.png
+add 'data/fixtures/teste.png'
+exit=0
+```
+
+Recusa de um lado, aceitação do outro. É esta a verificação do critério 3.4,
+e ela não depende de ler padrão nenhum. Os dois arquivos de teste foram
+apagados em seguida — o `--dry-run` não chegou a mexer no índice.
+
+#### ✅ 4. `data/reference/` fora do alcance das regras de dados (Req. 3.5)
+
+```
+$ git check-ignore -v --no-index data/reference/ocr_samples.csv
+.gitignore:37:!/data/reference/**	data/reference/ocr_samples.csv
+exit=0
+
+$ git check-ignore -v --no-index data/reference/initial_data.csv
+.gitignore:37:!/data/reference/**	data/reference/initial_data.csv
+exit=0
+```
+
+Negação nos dois: **não ignorados**. O `--no-index` é indispensável, e o
+contraste mostra por quê:
+
+```
+$ git check-ignore -v data/reference/ocr_samples.csv     # sem --no-index
+exit=1
+```
+
+Sem a opção o git simplesmente se cala sobre arquivo já rastreado, e a
+verificação não provaria nada — o silêncio seria o mesmo de um caminho que
+não casa com regra alguma.
+
+#### ✅ 5. Auditoria do conjunto rastreado (Req. 3.7) — saída vazia
+
+```
+$ git ls-files | git check-ignore -v --no-index --stdin | grep -v ":!"
+(saída vazia)
+```
+
+A saída **sem** o filtro mostra o que o `grep -v ":!"` descarta, e por que ele
+é obrigatório:
+
+```
+$ git ls-files | git check-ignore -v --no-index --stdin
+.gitignore:37:!/data/reference/**	data/reference/initial_data.csv
+.gitignore:37:!/data/reference/**	data/reference/ocr_samples.csv
+```
+
+As duas únicas linhas são **negações** — os arquivos seguros, que os
+Req. 2.4, 2.5 e 3.5 mandam manter versionados. Sem o filtro, a auditoria os
+acusaria e induziria a um `git rm --cached` que **violaria** esses três
+critérios. Nenhum arquivo rastreado casa com regra sem `!`, portanto **zero
+defeitos**:
+
+| Medida | Valor |
+|---|---|
+| arquivos rastreados | 34 |
+| casados por alguma regra, descontadas as negações | **0** |
+
+Corroboração que não depende do filtro: o `check-ignore` **sem `-v`** lista
+apenas o que de fato está ignorado, e as negações nem aparecem.
+
+```
+$ git ls-files | git check-ignore --no-index --stdin | wc -l
+0
+```
+
+#### ✅ 6. Nenhum arquivo de dado sob `src/` (Req. 2.1, 2.5)
+
+```
+$ git ls-files src | sed 's/.*\.//' | sort | uniq -c
+      1 lnk
+     14 py
+```
+
+Extensões reais dos 15 rastreados em `src/`: **nenhum `.csv`, `.png`, `.mp4`
+ou congênere**. No disco idem — `find src -type f` filtrando essas extensões
+devolve saída vazia.
+
+> **O `.lnk` não é falso negativo.** O único não-`.py` é
+> `src/market_analyzer/20261116-1555-54.7150164.mp4.lnk` (3 029 bytes). O
+> nome **contém** `.mp4`, mas a extensão é `.lnk`: um atalho do Windows, que
+> guarda um caminho e não dado. Ele é o V-04, endereçado nominalmente pelo
+> **Req. 6.1** e removido na tarefa 5.2 — a etapa seguinte. Sua presença aqui
+> é prevista pelo sequenciamento (P2 antes de E4), não uma falha deste
+> portão.
+
+Lado da distribuição (Req. 2.5), reconferido:
+
+```
+$ grep -nEi "package-data|include-package-data" pyproject.toml
+(nenhuma ocorrência)
+```
+
+A separação continua sendo feita **tirando os dados de dentro de `src/`**,
+não por configuração de empacotamento.
+
+#### ✅ 7. CLI no novo caminho, idêntico à linha de base da tarefa 2.3
+
+```
+$ ./.venv/Scripts/market-analyzer.exe --input data/reference/initial_data.csv
+Item: Algodão de isolamento acústico
+Samples: 20
+Minimum: 110037
+Maximum: 220074
+Mean: 154691.55
+Median: 140745.00
+Simulated trades: 2
+Simulated profit: 179130.00
+```
+
+Oito de oito contra a tabela da 2.3, inclusive o mínimo 110037 e o máximo
+220074 que o critério 2.6 nomeia. A comparação foi feita **byte a byte**
+contra o artefato guardado em
+`C:\Users\yjovencio\AppData\Local\Temp\baseline-cli.txt`, não a olho:
+
+```
+baseline sem BOM   sha256: d377fed2…5de15ccb
+saída desta tarefa sha256: d377fed2…5de15ccb
+BYTES IDENTICOS: True
+```
+
+O BOM descontado é o `EF BB BF` que o `Out-File -Encoding utf8` do PowerShell
+acrescentou ao capturar a linha de base; o conteúdo, CRLF incluído, é o mesmo
+objeto de 176 − 3 = 173 bytes.
+
+> **Ressalva de encoding — o V-21 reaparece, e é da etapa E6.** A captura
+> desta tarefa saiu de um executor cujo stdout é um *pipe*, não um console.
+> Nessa condição o Python escolhe a página de código ANSI da máquina e
+> escreveu `Algod\xE3o` em **cp1252**, enquanto a linha de base de 2.3 saiu em
+> UTF-8 de um console em `chcp 65001`. Uma comparação de bytes crua acusaria
+> diferença que **não é de comportamento**. Duas verificações foram feitas, e
+> as duas fecham:
+>
+> 1. decodificando cada captura na sua própria codificação (cp1252 aqui,
+>    `utf-8-sig` lá), o **texto** é idêntico nas 8 linhas;
+> 2. com `PYTHONIOENCODING=utf-8` forçado, a saída é **byte a byte idêntica**
+>    à linha de base sem BOM — o SHA-256 acima.
+>
+> Forçar `chcp 65001` do lado do PowerShell **não** resolve: o filho continua
+> sem console e segue emitindo cp1252, e o pai passa a decodificar como UTF-8,
+> produzindo `Algod\uFFFDo`. Mais uma confirmação do que a 2.3 já registrara:
+> a verificação do Req. 11 vai precisar olhar os **bytes** que o processo
+> escreve, não o texto redecodificado pelo terminal. Nada em `cli.py` foi
+> tocado até aqui — o V-21 continua **em aberto**, para E6.
+
+#### ✅ 8. Suíte — 10 verdes
+
+```
+platform win32 -- Python 3.12.10, pytest-9.2.0, pluggy-1.7.0
+configfile: pyproject.toml
+testpaths: tests
+collected 10 items
+
+tests\test_market_analyzer.py ....    [ 40%]
+tests\test_price_ocr.py ....          [ 80%]
+tests\test_video_sampler.py ..        [100%]
+
+10 passed in 0.15s
+```
+
+Inalterada desde P1 e desde o portão de E2. Mover os CSVs não quebrou nenhum
+teste porque nenhum deles os lia por caminho: os dois são insumo de inspeção
+manual, não fixture de suíte.
+
+#### Estado da árvore no momento do commit
+
+```
+$ git status --porcelain -uall
+ M .gitignore
+ M .sdd/specs/fundacao-projeto/design.md
+ M .sdd/specs/fundacao-projeto/impl-log.md
+ M .sdd/specs/fundacao-projeto/spec.json
+ M .sdd/specs/fundacao-projeto/tasks.md
+ M README.md
+R  src/market_analyzer/initial_data.csv -> data/reference/initial_data.csv
+R  src/data/processed/ocr_samples.csv -> data/reference/ocr_samples.csv
+ M validacao-inicial.md
+?? data/fixtures/.gitkeep
+?? data/processed/.gitkeep
+?? data/raw/.gitkeep
+?? data/reference/.gitkeep
+```
+
+Os dois CSVs entram como **`R` (renomeação)**, não como par
+adição + exclusão — é o critério 10.4 preservado, e o que faz
+`git log --follow` continuar alcançando o histórico deles.
+
+Nenhum dos quatro `.gitkeep` precisou de `git add -f`: os de `raw/` e
+`processed/` são reincluídos pelas negações das linhas 29 e 31, e os de
+`fixtures/` e `reference/` nunca chegam a ser alcançados por regra de
+ignorar. O `.png` de teste não aparece em lugar nenhum — foi apagado antes do
+commit.
+
+**Nenhum `git rm --cached` foi executado nesta tarefa, em caminho algum.**
+
+#### E3 encerrada
+
+Portão verde nas oito verificações. **E4 liberada** (Req. 10.6).

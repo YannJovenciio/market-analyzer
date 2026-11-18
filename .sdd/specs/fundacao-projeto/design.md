@@ -441,6 +441,13 @@ errada).
 
 **Auditoria do Req. 3.7.** Depois da reescrita, rodar sobre todos os arquivos
 rastreados uma verificação de `git check-ignore`; a saída esperada é **vazia**.
+
+> **Correção de 18/11/2026 (tarefa 4.3).** "Saída vazia" só vale **depois de
+> descartar as linhas de negação**. O `git check-ignore -v` imprime a regra e
+> sai com código 0 também quando o que casa é um `!`, de modo que os dois CSVs
+> de `data/reference/` aparecem na auditoria justamente por estarem
+> reincluídos. O comando correto filtra: `... --stdin | grep -v ":!"`. Ver
+> tarefa 4.5.
 Pela análise estática do conjunto atual de arquivos rastreados, nenhum passa a
 casar com regra de ignorar — `ocr_samples.csv` vai para `data/reference/`, que
 está explicitamente reincluído. Se a auditoria acusar algo, o arquivo sai do

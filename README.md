@@ -12,7 +12,10 @@ dados historicos e preparar futuras fontes de coleta.
 - `src/market_analyzer/storage`: persistencia local e futuros adaptadores.
 - `src/market_analyzer/cli.py`: interface de linha de comando.
 - `src/tests`: testes automatizados.
-- `src/data`: dados locais de desenvolvimento; capturas brutas nao devem ser versionadas.
+- `data`: dados do projeto, na raiz e fora de `src`, em quatro subpastas —
+  `data/raw` (videos e frames capturados) e `data/processed` (CSVs gerados
+  pelo pipeline) nao sao versionadas; `data/fixtures` (frames rotulados a mao)
+  e `data/reference` (series de referencia) sao versionadas.
 
 A interface grafica sera adicionada futuramente como um adaptador separado,
 consumindo os mesmos servicos do nucleo.

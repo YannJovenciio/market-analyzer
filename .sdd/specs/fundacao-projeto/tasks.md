@@ -184,7 +184,7 @@ arquivos produz um diff ilegível e atrapalha a detecção de renomeação de E3
 
 ## 4. E3 — Dados fora do código e regras de ignorar ancoradas (Req. 2, 3.1–3.7)
 
-- [ ] **4.1 Criar a árvore `data/` na raiz**
+- [x] **4.1 Criar a árvore `data/` na raiz**
   - Criar `data/raw/`, `data/processed/`, `data/fixtures/` e `data/reference/`.
   - Criar `.gitkeep` nas **quatro** pastas, para que todas existam em um clone
     limpo mesmo vazias.
@@ -196,7 +196,7 @@ arquivos produz um diff ilegível e atrapalha a detecção de renomeação de E3
     contingente, e deixa a regra uniforme nas quatro.
   - _Requisitos: 2.2_
 
-- [ ] **4.2 Mover os dois CSVs para `data/reference/` preservando o histórico**
+- [x] **4.2 Mover os dois CSVs para `data/reference/` preservando o histórico**
   - `git mv src/market_analyzer/initial_data.csv data/reference/initial_data.csv`
   - `git mv src/data/processed/ocr_samples.csv data/reference/ocr_samples.csv`
   - Remover `src/data/`, agora vazia.
@@ -205,7 +205,7 @@ arquivos produz um diff ilegível e atrapalha a detecção de renomeação de E3
     tirando os dados de dentro de `src/`.
   - _Requisitos: 2.1, 2.3, 2.4, 2.5_
 
-- [ ] **4.3 Reescrever o `.gitignore` com ancoragem na raiz e exceções por negação**
+- [x] **4.3 Reescrever o `.gitignore` com ancoragem na raiz e exceções por negação**
   - Blocos: ambiente e ferramenta (`__pycache__/`, `*.py[cod]`, `*.egg-info/`,
     `.venv/`, `.pytest_cache/`, `.ruff_cache/`); editor e logs; mídia global
     (`*.mp4`, `*.avi`, `*.mov`, `*.png`, `*.jpg`, `*.jpeg`).
@@ -217,7 +217,7 @@ arquivos produz um diff ilegível e atrapalha a detecção de renomeação de E3
     `!/data/fixtures/**` e `!/data/reference/**`.
   - _Requisitos: 3.1, 3.2, 3.3, 3.5, 3.6_
 
-- [ ] **4.4 Atualizar nos documentos os caminhos de dados que servem de instrução**
+- [x] **4.4 Atualizar nos documentos os caminhos de dados que servem de instrução**
   - Usar a lista fechada da tarefa 1.3: toda ocorrência classificada como
     **instrução** passa a apontar `data/reference/...`.
   - Em `validacao-inicial.md`, as ocorrências que **descrevem um achado**
@@ -226,21 +226,42 @@ arquivos produz um diff ilegível e atrapalha a detecção de renomeação de E3
     `data/reference/ocr_samples.csv`)*.
   - _Requisitos: 2.7_
 
-- [ ] **4.5 Portão P2 — ignorar verificado arquivo a arquivo e CLI na linha de base**
+- [x] **4.5 Portão P2 — ignorar verificado arquivo a arquivo e CLI na linha de base**
+  - > **Correção de 18/11/2026, verificada na tarefa 4.3 — leia antes de
+    > executar.** `git check-ignore -v` **sai com código 0 e imprime a regra
+    > sempre que alguma casa, inclusive quando a regra é uma negação (`!`)**.
+    > Código de saída e presença de saída **não** distinguem "ignorado" de
+    > "reincluído": quem distingue é o `!` no início do padrão impresso. As
+    > expectativas originais deste portão ("saída vazia, código 1") estavam
+    > erradas para os caminhos reincluídos, e a remediação por
+    > `git rm --cached` apagaria do índice exatamente os dois CSVs que os
+    > Req. 2.4, 2.5 e 3.5 mandam manter versionados. Os itens abaixo já estão
+    > corrigidos.
   - Criar um `.png` descartável em `data/fixtures/`:
-    `git check-ignore -v data\fixtures\teste.png` → **não ignorado** (saída
-    vazia, código de saída 1).
+    `git check-ignore -v data\fixtures\teste.png` → imprime
+    `.gitignore:35:!/data/fixtures/**` com código 0 — **regra de negação**,
+    ou seja **não ignorado**.
   - Mover o mesmo arquivo para `data/raw/`:
     `git check-ignore -v data\raw\teste.png` → **ignorado**, com a regra
-    `/data/raw/*` apontada na saída. Apagar o arquivo de teste depois da
-    verificação.
-  - `git check-ignore -v --no-index data/reference/ocr_samples.csv` → **não
-    ignorado**. O `--no-index` é necessário: sem ele, o git nunca reporta
-    arquivo já rastreado e a verificação não prova nada.
-  - Auditoria do conjunto rastreado:
-    `git ls-files | git check-ignore -v --no-index --stdin` → **saída vazia**.
-    Se algum arquivo aparecer, removê-lo do índice com `git rm --cached` antes
-    de seguir.
+    `/data/raw/*` (sem `!`) apontada na saída. Apagar o arquivo de teste
+    depois da verificação.
+  - **Prova independente, que não depende de interpretar o `check-ignore`:**
+    com os dois arquivos de teste no lugar, `git status --porcelain -uall
+    data/` lista `data/fixtures/teste.png` e **não** lista
+    `data/raw/teste.png`; e `git add --dry-run data/raw/teste.png` é recusado
+    com "paths are ignored by one of your .gitignore files", enquanto o de
+    `fixtures/` é aceito. É esta a verificação do critério 3.4.
+  - `git check-ignore -v --no-index data/reference/ocr_samples.csv` → imprime
+    `.gitignore:37:!/data/reference/**` com código 0 — negação, portanto
+    **não ignorado** (Req. 3.5). O `--no-index` continua necessário: sem ele o
+    git nunca reporta arquivo já rastreado e a verificação não prova nada.
+  - Auditoria do conjunto rastreado (Req. 3.7):
+    `git ls-files | git check-ignore -v --no-index --stdin | grep -v ":!"`
+    → **saída vazia**. O `grep -v ":!"` descarta as linhas de **negação**,
+    que são justamente as seguras; sem ele a auditoria acusa os dois CSVs de
+    `data/reference/` e induz a removê-los. Só um arquivo casado por regra
+    **sem** `!` é defeito — e aí sim sai do índice com `git rm --cached`
+    antes de seguir.
   - `git ls-files src` → **nenhum arquivo com extensão de dado** (`.csv`,
     `.png`, `.mp4` e congêneres).
   - `market-analyzer --input data/reference/initial_data.csv` → saída
