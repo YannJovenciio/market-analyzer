@@ -27,3 +27,9 @@ market-analyzer --help
 O projeto ainda nao inicializa nem depende de um repositorio Git. Isso sera
 feito quando a estrutura inicial estiver validada.
 
+
+## Documentos
+
+- `analise-inicial.md` — primeira analise manual da serie de precos.
+- `validacao-inicial.md` — **estado real do projeto e achados pendentes**.
+  Ponto de partida para as specs em `.sdd/specs/`.
