@@ -72,10 +72,22 @@ objetos de domínio — nunca estado compartilhado em memória.
 Três categorias distintas, que não devem se misturar:
 
 - **Código** — o pacote Python.
-- **Dados** — material bruto (`data/raw/`: vídeos e frames, nunca versionados) e
-  derivados (`data/processed/`: CSVs gerados). **Dados não pertencem a `src/`.**
-  Exceção deliberada: **fixtures de OCR rotuladas**, que são gabarito de teste e
-  precisam ser versionadas com exceção explícita no `.gitignore`.
+- **Dados** — quatro categorias, separadas pelo critério "isto é regenerável?":
+  | Pasta | Conteúdo | Versionado? |
+  |---|---|---|
+  | `data/raw/` | vídeos e frames capturados | não — pesado e regravável |
+  | `data/processed/` | CSVs gerados pelo pipeline | não — regenerável a partir de `raw/` |
+  | `data/fixtures/` | frames rotulados à mão | **sim** — gabarito de teste, custa trabalho humano |
+  | `data/reference/` | séries de referência estáveis | **sim** — linha de base de comparação |
+
+  **Dados não pertencem a `src/`.** As duas pastas versionadas são exceção
+  deliberada e exigem negação explícita no `.gitignore`, que de outro modo
+  ignoraria `*.png` globalmente.
+
+  `data/reference/` guarda hoje o par que forma a linha de base do achado
+  V-06: `initial_data.csv` (transcrição manual) e `ocr_samples.csv` (saída do
+  OCR). Não é captura bruta nem artefato descartável — é contra esse par que
+  a spec `ocr-confiavel` vai demonstrar melhora.
 - **Documentos de projeto** — `README.md`, `analise-inicial.md`,
   `validacao-inicial.md`, na raiz.
 
@@ -110,7 +122,8 @@ market-analyzer/
 ├─ data/                    # fora de src/
 │  ├─ raw/                  # vídeos e frames — não versionado
 │  ├─ processed/            # CSVs gerados — não versionado
-│  └─ fixtures/             # frames rotulados — VERSIONADO (exceção)
+│  ├─ fixtures/             # frames rotulados — VERSIONADO (exceção)
+│  └─ reference/            # séries de referência — VERSIONADO (exceção)
 ├─ .sdd/                    # steering e specs
 ├─ pyproject.toml
 ├─ README.md

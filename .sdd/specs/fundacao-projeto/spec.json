@@ -2,25 +2,31 @@
   "feature_name": "fundacao-projeto",
   "language": "pt-BR",
   "created_at": "2026-11-18T00:00:00Z",
-  "updated_at": "2026-11-18T00:00:00Z",
-  "phase": "requirements-approved",
+  "updated_at": "2026-11-18T15:00:00Z",
+  "phase": "tasks-approved",
   "approvals": {
     "requirements": {
       "generated": true,
       "approved": true,
       "approved_at": "2026-11-18",
-      "notes": "11 requisitos, 70 critérios EARS. Cinco pontos de decisão resolvidos na revisão: data/reference/ versionado para initial_data.csv e ocr_samples.csv; caminhos o/ preservados como evidência histórica; Requisito 11 (V-21) mantido; localização de frame_name/frame_seconds adiada para o design."
+      "notes": "11 requisitos, 74 criterios EARS (contagem corrigida em 18/11; registros anteriores de 70/84/87 estavam inflados). Cinco pontos de decisao resolvidos. Req. 2.7 flexibilizado na revisao do design (A-2): documento que serve de instrucao atualiza o caminho; narrativa de achado preserva, com a localizacao atual anotada ao lado."
     },
     "design": {
-      "generated": false,
-      "approved": false
+      "generated": true,
+      "generated_at": "2026-11-18",
+      "approved": true,
+      "notes": "Aprovado com tres ajustes na revisao humana. A-2: Req. 2.7 flexibilizado para preservar a evidencia dos achados V-06/V-16/V-17. A-3: data/reference/ acrescentado a estrutura de destino do structure.md, feito na aprovacao e nao adiado para E8. A-7: helper de skip do Tesseract adiado para ocr-confiavel, por nascer sem nenhum chamador; Req. 5.4 fica satisfeito por desenho. Mantidos: dependencies.py (A-4) e alcance do Req. 11 restrito ao cli principal (A-5). .gitignore proposto em D-5 validado empiricamente em repositorio descartavel: fixtures e reference versionados, raw e processed ignorados, .gitkeep presente nas quatro pastas.",
+      "approved_at": "2026-11-18"
     },
     "tasks": {
-      "generated": false,
-      "approved": false
+      "generated": true,
+      "generated_at": "2026-11-18",
+      "approved": true,
+      "approved_at": "2026-11-18",
+      "notes": "39 tarefas em 9 grupos (E0-E8), 8 delas tarefas de portao com comando e resultado esperado, 1 adiavel pos-MVP (6.9). Marcadores (P) em 6 tarefas, restritos a dois blocos sem conflito: auditorias read-only de E0 e os tres documentos distintos de E8. Nada paralelo em E5, onde as ordens de 6.6 (video_sampler por ultimo entre os consumidores) e 6.8 (ruff --fix so apos a extracao de frame_naming) sao o risco principal da spec. Correcao sobre o design, verificada empiricamente: a auditoria do Req. 3.7 exige 'git check-ignore --no-index'; sem a flag o git nunca reporta arquivo ja rastreado como ignorado e o portao passaria sempre sem provar nada. Decidido na revisao: .gitkeep nas quatro pastas de data/, inclusive reference/, para que o Req. 2.2 seja satisfeito de forma estrutural e nao contingente ao conteudo."
     }
   },
-  "ready_for_implementation": false,
+  "ready_for_implementation": true,
   "related_findings": [
     "V-04",
     "V-13",

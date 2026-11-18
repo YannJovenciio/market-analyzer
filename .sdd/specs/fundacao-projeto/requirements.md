@@ -116,8 +116,20 @@ da instalação.
 6. QUANDO o CLI for executado apontando para o CSV de referência no novo
    caminho, o sistema DEVE produzir os mesmos números da linha de base
    (20 amostras, mínimo 110037, máximo 220074).
-7. Nenhum módulo, teste ou documento DEVE referenciar os caminhos antigos
-   `src/data/` ou `src/market_analyzer/initial_data.csv` após a migração.
+7. Nenhum módulo, teste ou documento **que sirva de instrução** DEVE
+   referenciar os caminhos antigos `src/data/` ou
+   `src/market_analyzer/initial_data.csv` após a migração. Isso inclui código,
+   testes, `README.md`, steering e specs.
+   - **Exceção — registro histórico.** O `validacao-inicial.md` PODE preservar
+     esses caminhos ao **descrever um achado**, já que eles são a evidência do
+     próprio defeito: V-06 compara `initial_data.csv` com
+     `src/data/processed/ocr_samples.csv`, e V-16/V-17 citam `src/data/` como
+     sendo o defeito em si. Reescrever a evidência destruiria o achado.
+     Onde isso ocorrer, a localização atual DEVE ser anotada ao lado, para que
+     ninguém siga o caminho antigo por engano.
+   - *Decidido em 18/11/2026 (ver A-2 no `design.md`). É a mesma régua já
+     aplicada aos caminhos `o/` no critério 1.7: instrução se atualiza,
+     narrativa de achado permanece.*
 
 ---
 

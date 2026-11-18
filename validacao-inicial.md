@@ -432,6 +432,9 @@ estiver fechada e o material bruto existir.
 | 18/11/2026 | Seção 7 adicionada: divisão de trabalho humano (H-1 a H-7) × IA (C-1 a C-7). |
 | 18/11/2026 | `.sdd/steering/` criado (bootstrap): `product.md`, `tech.md`, `structure.md`. Aprovado como Source of Truth. |
 | 18/11/2026 | **Convenção decidida:** migrar de `.format()` para f-string, com exceção para template-contrato; regra verificada por `ruff UP032`. Entra no escopo de `fundacao-projeto`. |
-| 18/11/2026 | Requisitos de `fundacao-projeto` gerados e aprovados — 11 requisitos, 84 critérios EARS. Cinco pontos de decisão resolvidos. |
+| 18/11/2026 | Requisitos de `fundacao-projeto` gerados e aprovados — 11 requisitos, 74 critérios EARS. Cinco pontos de decisão resolvidos. |
+| 18/11/2026 | Design de `fundacao-projeto` gerado e aprovado — 9 decisões, sequência E0–E8 com portões. A-2 (flexibilizar Req. 2.7 para preservar evidência) e A-3 (`data/reference/` no steering) aprovados; A-7 (helper de *skip*) adiado para `ocr-confiavel`. |
+| 18/11/2026 | Tarefas de `fundacao-projeto` geradas e aprovadas — 39 tarefas, 8 portões. Spec pronta para implementação. |
+| 18/11/2026 | **Correção verificada:** a auditoria do Req. 3.7 exige `git check-ignore --no-index`. Sem a flag, o git não reporta arquivo já rastreado como ignorado e o portão passaria sempre, sem provar nada — justamente o caso do `ocr_samples.csv`, que originou o requisito. |
 | 18/11/2026 | **Achatamento executado manualmente** pelo dono do projeto, fora do git. Conteúdo de `o/` movido para a raiz; `o/` removido. Preservação de histórico a verificar após o commit. |
 | 18/11/2026 | **V-24 adicionado:** sem `.gitattributes`, quebras de linha não normalizadas. Descoberto ao simular o commit. Entra no escopo de `fundacao-projeto`. |
